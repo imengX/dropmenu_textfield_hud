@@ -17,14 +17,17 @@
 
 @property (copy, nonatomic) NSArray *originDataSource;
 
+@property (assign, nonatomic, getter=isReveal) BOOL reveal;
+
 @end
 
 @implementation XCDropMenu
 
-- (instancetype)initWithFrame:(CGRect)frame
+- (instancetype)initWithDataSource:(NSArray *)dataSource
 {
-    self = [super initWithFrame:frame];
+    self = [super initWithFrame:CGRectZero];
     if (self) {
+        self.dataSource = dataSource;
         [self initialValues];
         [self initialViews];
     }
@@ -73,9 +76,10 @@
     
     self.itemHeight = 50;
     self.numberOfShownItems = 4;
-    self.dataSource = @[];
     self.hideMenuAfterTouch = YES;
     self.selectedCoin = self.selectedCoin ? : @"BTC";
+    self.reveal = NO;
+    
 }
 
 - (void)initialViews {
@@ -228,23 +232,31 @@
     transform = CGAffineTransformRotate(transform, M_PI);
     
     [UIView animateWithDuration:animate ? 0.25f : 0.0f animations:^{
+        for (NSLayoutConstraint *constraint in self.menuView.constraints) {
+            if ([constraint.identifier isEqualToString:@"menu_height"]) {
+                [NSLayoutConstraint deactivateConstraints:@[constraint]];
+            }
+        }
+        self.reveal = YES;
         self.menuView.alpha = 1;
         self.tableView.alpha = 1;
+        [self layoutSubviews];
+        [self.tableView needsUpdateConstraints];
         [self.tableView reloadData];
-        self.menuView.frame = (CGRect){
-                                         self.frame.origin.x,
-                                         self.frame.origin.y + self.frame.size.height + 5,
-                                         self.frame.size.width,
-                                         self.itemHeight * self.numberOfShownItems
-                                        };
-        self.tableView.frame = (CGRect){
-                                         0,
-                                         0,
-                                         self.frame.size.width,
-                                         self.itemHeight * self.numberOfShownItems
-                                       };
+//        self.menuView.frame = (CGRect){
+//                                         self.frame.origin.x,
+//                                         self.frame.origin.y + self.frame.size.height + 5,
+//                                         self.frame.size.width,
+//                                         self.itemHeight * self.numberOfShownItems
+//                                        };
+//        self.tableView.frame = (CGRect){
+//                                         0,
+//                                         0,
+//                                         self.frame.size.width,
+//                                         self.itemHeight * self.numberOfShownItems
+//                                       };
+        
         self.indicatorView.layer.affineTransform = transform;
-        [self.menuView layoutSubviews];
     }];
 }
 
@@ -262,24 +274,36 @@
     transform = CGAffineTransformRotate(transform, 0);
     
     [UIView animateWithDuration:animate ? 0.25f : 0.0f animations:^{
+        for (NSLayoutConstraint *constraint in self.menuView.constraints) {
+            if ([constraint.identifier isEqualToString:@"menu_height"]) {
+                [NSLayoutConstraint deactivateConstraints:@[constraint]];
+            }
+        }
         self.menuView.alpha = 0;
         self.tableView.alpha = 0;
+        self.reveal = NO;
+        [self layoutSubviews];
+        [self.tableView needsUpdateConstraints];
         [self.tableView reloadData];
-        self.menuView.frame = (CGRect){
-                                         self.frame.origin.x,
-                                         self.frame.origin.y + self.frame.size.height + 5,
-                                         self.frame.size.width,
-                                         0
-                                        };
+//        self.menuView.frame = (CGRect){
+//                                         self.frame.origin.x,
+//                                         self.frame.origin.y + self.frame.size.height + 5,
+//                                         self.frame.size.width,
+//                                         0
+//                                        };
+//
+//        self.tableView.frame = (CGRect){
+//                                         0,
+//                                         0,
+//                                         self.frame.size.width,
+//                                         0
+//                                       };
         
-        self.tableView.frame = (CGRect){
-                                         0,
-                                         0,
-                                         self.frame.size.width,
-                                         0
-                                       };
         self.indicatorView.layer.affineTransform = transform;
-        [self.menuView layoutSubviews];
+//        [self needsUpdateConstraints];
+//        [self.menuView needsUpdateConstraints];
+//        [self.menuView layoutSubviews];
+//        [self.tableView needsUpdateConstraints];
     }];
 }
 
@@ -290,6 +314,7 @@
 
 - (void)menuLayout {
     CGFloat menuHeight = self.itemHeight * self.numberOfShownItems;
+    
     NSLayoutConstraint *menu_leading = [NSLayoutConstraint constraintWithItem:self.menuView
                                                                     attribute:NSLayoutAttributeLeading
                                                                     relatedBy:NSLayoutRelationEqual
@@ -317,7 +342,8 @@
                                                                        toItem:nil
                                                                     attribute:NSLayoutAttributeNotAnAttribute
                                                                    multiplier:1
-                                                                     constant:menuHeight];
+                                                                     constant:self.reveal ? menuHeight : 0];
+    menu_height.identifier = @"menu_height";
     [NSLayoutConstraint activateConstraints:@[menu_leading, menu_trailing, menu_top, menu_height]];
 }
 

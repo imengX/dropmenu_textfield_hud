@@ -48,6 +48,8 @@ typedef NS_ENUM(NSInteger, XCDropMenuType) {
 /** Item 是否可以点击 */
 //@property (assign, nonatomic) BOOL canSelect;
 
+
+- (instancetype)initWithDataSource:(NSArray *)dataSource;
 /** 数据源 */
 @property (copy, nonatomic) NSArray *dataSource;
 /** 更新数据源 */

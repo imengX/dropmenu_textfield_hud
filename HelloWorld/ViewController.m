@@ -47,7 +47,7 @@ UIColor *naviColor;
     self.view.backgroundColor = bgColor;
     
     NSArray *fullCoinNames = @[@"BTC", @"COC", @"ETH", @"ETC"];
-    XCDropMenu *topMenu = [[XCDropMenu alloc] initWithFrame:CGRectZero];
+    XCDropMenu *topMenu = [[XCDropMenu alloc] initWithDataSource:fullCoinNames];
     topMenu.selectedCoin = @"BTC";
     [self.view addSubview:topMenu];
     [topMenu mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -56,10 +56,10 @@ UIColor *naviColor;
         make.height.mas_equalTo(50);
         make.width.mas_equalTo(165);
     }];
-    topMenu.dataSource = fullCoinNames;
+//    topMenu.dataSource = fullCoinNames;
     
     
-    XCDropMenu *secondMenu = [[XCDropMenu alloc] initWithFrame:CGRectZero];
+    XCDropMenu *secondMenu = [[XCDropMenu alloc] initWithDataSource:fullCoinNames];
     secondMenu.selectedCoin = @"COC";
     [self.view addSubview:secondMenu];
     [secondMenu mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -68,7 +68,7 @@ UIColor *naviColor;
         make.height.mas_equalTo(50);
         make.width.mas_equalTo(165);
     }];
-    secondMenu.dataSource = fullCoinNames;
+//    secondMenu.dataSource = fullCoinNames;
     
     
     

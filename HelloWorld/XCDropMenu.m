@@ -20,6 +20,7 @@
 @property (assign, nonatomic, getter=isReveal) BOOL reveal;
 
 @property(nonatomic, strong) NSLayoutConstraint *menu_height;
+@property(nonatomic, strong) NSArray<NSLayoutConstraint*> *menuSuperViewConstraints;
 
 @end
 
@@ -47,6 +48,7 @@
         _menuView.backgroundColor = self.backgroundColor;
         _menuView.translatesAutoresizingMaskIntoConstraints = NO;
         [_menuView addSubview:self.tableView];
+        [self tableLayout];
     }
     return _menuView;
 }
@@ -102,8 +104,6 @@
         // 同时也要注意，init 传值后，远端更新数据源时，origin 也需要再赋值“一”次。
         self.originDataSource = self.dataSource.copy;
     }
-
-    [self addSubview:self.menuView];
     
     _iconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:self.selectedCoin]];
     _iconView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -125,8 +125,6 @@
         [self addSubview:self.indicatorView];
 //    }
     
-    [self menuLayout];
-    [self tableLayout];
     [self iconLayout];
     [self titleLayout];
     [self indicatorLayout];
@@ -224,7 +222,8 @@
     } else {
         self.tableView.scrollEnabled = YES;
     }
-    [self.superview bringSubviewToFront:self.menuView];
+    [self.superview addSubview:self.menuView];
+    [self menuLayout];
     
     CGAffineTransform transform = CGAffineTransformIdentity;
     transform = CGAffineTransformRotate(transform, M_PI);
@@ -249,7 +248,6 @@
 //                                         self.frame.size.width,
 //                                         self.itemHeight * self.numberOfShownItems
 //                                       };
-        
         self.indicatorView.layer.affineTransform = transform;
     }];
 }
@@ -261,24 +259,19 @@
     } else {
         self.tableView.scrollEnabled = YES;
     }
-    [self.superview sendSubviewToBack:self.menuView];
     
-    
+    self.reveal = NO;
+    [self updateMenuViewState];
+
     CGAffineTransform transform = CGAffineTransformIdentity;
     transform = CGAffineTransformRotate(transform, 0);
-    
+    [self.tableView reloadData];
     [UIView animateWithDuration:animate ? 0.25f : 0.0f animations:^{
-        for (NSLayoutConstraint *constraint in self.menuView.constraints) {
-            if ([constraint.identifier isEqualToString:@"menu_height"]) {
-                [NSLayoutConstraint deactivateConstraints:@[constraint]];
-            }
-        }
+
         self.menuView.alpha = 0;
         self.tableView.alpha = 0;
-        self.reveal = NO;
-        [self layoutSubviews];
-        [self.tableView needsUpdateConstraints];
-        [self.tableView reloadData];
+        [self layoutIfNeeded];
+        
 //        self.menuView.frame = (CGRect){
 //                                         self.frame.origin.x,
 //                                         self.frame.origin.y + self.frame.size.height + 5,
@@ -298,6 +291,9 @@
 //        [self.menuView needsUpdateConstraints];
 //        [self.menuView layoutSubviews];
 //        [self.tableView needsUpdateConstraints];
+    } completion:^(BOOL finished) {
+        [self.menuView removeConstraints:self.menuSuperViewConstraints];
+        [self.menuView removeFromSuperview];
     }];
 }
 
@@ -341,7 +337,8 @@
                                                                    multiplier:1
                                                                      constant:0];
 //    _menu_height.identifier = @"menu_height";
-    [NSLayoutConstraint activateConstraints:@[menu_leading, menu_trailing, menu_top, _menu_height]];
+    self.menuSuperViewConstraints = @[menu_leading, menu_trailing, menu_top, _menu_height];
+    [NSLayoutConstraint activateConstraints:self.menuSuperViewConstraints];
 }
 
 - (void)tableLayout {

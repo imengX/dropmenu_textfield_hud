@@ -19,6 +19,8 @@
 
 @property (assign, nonatomic, getter=isReveal) BOOL reveal;
 
+@property(nonatomic, strong) NSLayoutConstraint *menu_height;
+
 @end
 
 @implementation XCDropMenu
@@ -44,6 +46,7 @@
         _menuView.layer.borderColor = self.borderColor.CGColor;
         _menuView.backgroundColor = self.backgroundColor;
         _menuView.translatesAutoresizingMaskIntoConstraints = NO;
+        [_menuView addSubview:self.tableView];
     }
     return _menuView;
 }
@@ -99,22 +102,14 @@
         // 同时也要注意，init 传值后，远端更新数据源时，origin 也需要再赋值“一”次。
         self.originDataSource = self.dataSource.copy;
     }
+
+    [self addSubview:self.menuView];
     
-    if (!self.menuView.superview) {
-        [self addSubview:self.menuView];
-    }
+    _iconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:self.selectedCoin]];
+    _iconView.translatesAutoresizingMaskIntoConstraints = NO;
+    [self addSubview:_iconView];
     
-    if (!self.tableView.superview) {
-        [self.menuView addSubview:self.tableView];
-    }
-    
-    if (!self.iconView) {
-        self.iconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:self.selectedCoin]];
-        self.iconView.translatesAutoresizingMaskIntoConstraints = NO;
-        [self addSubview:self.iconView];
-    }
-    
-    if (!self.titleLabel) {
+//    if (!self.titleLabel) {
         self.titleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
         self.titleLabel.text = self.selectedCoin;
         self.titleLabel.textColor = self.textColor;
@@ -122,24 +117,27 @@
         self.titleLabel.font = [UIFont systemFontOfSize:15];
         self.titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
         [self addSubview:self.titleLabel];
-    }
+//    }
     
-    if (!self.indicatorView) {
+//    if (!self.indicatorView) {
         self.indicatorView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"triangle"]];
         self.indicatorView.translatesAutoresizingMaskIntoConstraints = NO;
         [self addSubview:self.indicatorView];
-    }
-    
-}
-
-- (void)layoutSubviews {
-    [super layoutSubviews];
+//    }
     
     [self menuLayout];
     [self tableLayout];
     [self iconLayout];
     [self titleLayout];
     [self indicatorLayout];
+}
+
+- (void)updateConstraints {
+    [super updateConstraints];
+}
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
 }
 
 - (void)updateDataSource:(NSArray *)newDataSource {
@@ -231,18 +229,14 @@
     CGAffineTransform transform = CGAffineTransformIdentity;
     transform = CGAffineTransformRotate(transform, M_PI);
     
+    self.reveal = YES;
+    [self updateMenuViewState];
+    [self.tableView reloadData];
+    
     [UIView animateWithDuration:animate ? 0.25f : 0.0f animations:^{
-        for (NSLayoutConstraint *constraint in self.menuView.constraints) {
-            if ([constraint.identifier isEqualToString:@"menu_height"]) {
-                [NSLayoutConstraint deactivateConstraints:@[constraint]];
-            }
-        }
-        self.reveal = YES;
         self.menuView.alpha = 1;
         self.tableView.alpha = 1;
-        [self layoutSubviews];
-        [self.tableView needsUpdateConstraints];
-        [self.tableView reloadData];
+        [self.menuView layoutIfNeeded];
 //        self.menuView.frame = (CGRect){
 //                                         self.frame.origin.x,
 //                                         self.frame.origin.y + self.frame.size.height + 5,
@@ -312,9 +306,12 @@
     [self hideMenuAnimated:YES];
 }
 
-- (void)menuLayout {
+- (void)updateMenuViewState {
     CGFloat menuHeight = self.itemHeight * self.numberOfShownItems;
-    
+    self.menu_height.constant = self.reveal ? menuHeight : 0;
+}
+
+- (void)menuLayout {
     NSLayoutConstraint *menu_leading = [NSLayoutConstraint constraintWithItem:self.menuView
                                                                     attribute:NSLayoutAttributeLeading
                                                                     relatedBy:NSLayoutRelationEqual
@@ -336,15 +333,15 @@
                                                                     attribute:NSLayoutAttributeBottom
                                                                    multiplier:1
                                                                      constant:5];
-    NSLayoutConstraint *menu_height = [NSLayoutConstraint constraintWithItem:self.menuView
+    _menu_height = [NSLayoutConstraint constraintWithItem:self.menuView
                                                                     attribute:NSLayoutAttributeHeight
                                                                     relatedBy:NSLayoutRelationEqual
                                                                        toItem:nil
                                                                     attribute:NSLayoutAttributeNotAnAttribute
                                                                    multiplier:1
-                                                                     constant:self.reveal ? menuHeight : 0];
-    menu_height.identifier = @"menu_height";
-    [NSLayoutConstraint activateConstraints:@[menu_leading, menu_trailing, menu_top, menu_height]];
+                                                                     constant:0];
+//    _menu_height.identifier = @"menu_height";
+    [NSLayoutConstraint activateConstraints:@[menu_leading, menu_trailing, menu_top, _menu_height]];
 }
 
 - (void)tableLayout {
@@ -466,26 +463,30 @@
 
 @implementation DMCell
 
-- (void)layoutSubviews {
-    [super layoutSubviews];
-    
-    self.backgroundColor = [UIColor colorWithRed:28.f/255.f green:28.f/255.f blue:28.f/255.f alpha:1];
-    
-    if (!self.iconImage) {
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier {
+    if (self = [super initWithStyle:style reuseIdentifier:reuseIdentifier]) {
+        self.backgroundColor = [UIColor colorWithRed:28.f/255.f green:28.f/255.f blue:28.f/255.f alpha:1];
+
         self.iconImage = [[UIImageView alloc] init];
         self.iconImage.translatesAutoresizingMaskIntoConstraints = NO;
         [self.contentView addSubview:self.iconImage];
-    }
-    if (!self.titleLabel) {
+        
         self.titleLabel = [[UILabel alloc] init];
         self.titleLabel.font = [UIFont systemFontOfSize:15];
         self.titleLabel.textColor = [UIColor whiteColor];
         self.titleLabel.textAlignment = NSTextAlignmentCenter;
         self.titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
         [self.contentView addSubview:self.titleLabel];
+        
+        [self iconLayout];
+        [self titleLayout];
+
     }
-    [self iconLayout];
-    [self titleLayout];
+    return self;
+}
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
 }
 
 - (void)updateCell:(id)model {
